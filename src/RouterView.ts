@@ -37,13 +37,15 @@ export const RouterViewImpl = defineComponent({
 
   setup(props, { attrs, slots }) {
     __DEV__ && warnDeprecatedUsage()
-
+    // 注入 route location
     const injectedRoute = inject(routeLocationKey)!
+    // 视图的深度
     const depth = inject(viewDepthKey, 0)
     const matchedRouteRef = computed(
       () => (props.route || injectedRoute).matched[depth]
     )
 
+    // 任意一个组件都可以作为 父级组件 provide 提供值，传给子组件
     provide(viewDepthKey, depth + 1)
     provide(matchedRouteKey, matchedRouteRef)
 
@@ -112,6 +114,7 @@ export const RouterView = (RouterViewImpl as any) as {
   }
 }
 
+// TODO: 函数式组件在 vue3 中不再被支持 ？
 // warn against deprecated usage with <transition> & <keep-alive>
 // due to functional component being no longer eager in Vue 3
 function warnDeprecatedUsage() {

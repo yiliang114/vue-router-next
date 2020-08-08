@@ -116,12 +116,14 @@ export function createRouterMatcher(
           parent.record.path + (path && connectingSlash + path)
       }
 
+      // 先创建对象，然后将其传递给子对象
       // create the object before hand so it can be passed to children
       matcher = createRouteRecordMatcher(normalizedRecord, parent, options)
 
       if (__DEV__ && parent && path[0] === '/')
         checkMissingParamsInAbsolutePath(matcher, parent)
 
+      // 如果我们是别名，则必须告诉原始记录我们已经存在，因此我们可以被删除
       // if we are an alias we must tell the original record that we exist
       // so we can be removed
       if (originalRecord) {
@@ -311,6 +313,7 @@ function paramsFromLocation(
 }
 
 /**
+ * 归一化一个未加工的历史记录对象
  * Normalizes a RouteRecordRaw. Creates a copy
  *
  * @param record

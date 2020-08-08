@@ -19,6 +19,7 @@ import { assign } from '../utils'
 
 type PopStateListener = (this: Window, ev: PopStateEvent) => any
 
+// FIXME: 是否可以用 const 呢
 let createBaseLocation = () => location.protocol + '//' + location.host
 
 interface StateEntry extends HistoryState {
@@ -31,6 +32,7 @@ interface StateEntry extends HistoryState {
 }
 
 /**
+ * 从 window.location 对象创建归一化的 历史记录 位置
  * Creates a normalized history location from a window.location object
  * @param location
  */
@@ -39,15 +41,21 @@ function createCurrentLocation(
   location: Location
 ): HistoryLocation {
   const { pathname, search, hash } = location
-  // allows hash based url
+  // FIXME: 这里可以缩进去
+  // allows hash based url 允许哈希 base 的 url
   const hashPos = base.indexOf('#')
   if (hashPos > -1) {
+    // FIXME: 这里应该是以 / 开头吧。。。
+    // 在开始斜杠前添加哈希以使 URL 以 /# 开头
     // prepend the starting slash to hash so the url starts with /#
     let pathFromHash = hash.slice(1)
     if (pathFromHash[0] !== '/') pathFromHash = '/' + pathFromHash
+    // FIXME: 这里直接可以 return pathFromHash 了
     return stripBase(pathFromHash, '')
   }
+  // 剥离 pathname 中的 base
   const path = stripBase(pathname, base)
+  // 3 者拼接之后返回
   return path + search + hash
 }
 
@@ -59,15 +67,19 @@ function useHistoryListeners(
 ) {
   let listeners: NavigationCallback[] = []
   let teardowns: Array<() => void> = []
+  // 应该是堆栈吗？一个字典。检查 popstate 侦听器 可以触发两次
   // TODO: should it be a stack? a Dict. Check if the popstate listener
   // can trigger twice
+  // 暂存属性 ？
   let pauseState: HistoryLocation | null = null
 
+  // popState 更新的时候执行的函数
   const popStateHandler: PopStateListener = ({
     state,
   }: {
     state: StateEntry | null
   }) => {
+    // location: window.location
     const to = createCurrentLocation(base, location)
     const from: HistoryLocation = currentLocation.value
     const fromState: StateEntry = historyState.value
@@ -77,6 +89,7 @@ function useHistoryListeners(
       currentLocation.value = to
       historyState.value = state
 
+      // 忽略 popstate 并重置 pauseState
       // ignore the popstate and reset the pauseState
       if (pauseState && pauseState === from) {
         pauseState = null
@@ -106,11 +119,13 @@ function useHistoryListeners(
     })
   }
 
+  // 暂停监听器
   function pauseListeners() {
     pauseState = currentLocation.value
   }
 
   function listen(callback: NavigationCallback) {
+    // 建立监听器并准备拆卸回调
     // setup the listener and prepare teardown callbacks
     listeners.push(callback)
 
@@ -120,9 +135,11 @@ function useHistoryListeners(
     }
 
     teardowns.push(teardown)
+    // 返回一个拆卸函数，从 listeners 中剥离当前的回调函数
     return teardown
   }
 
+  // 在浏览器关闭、前进、后退之前执行的操作，需要更新 history.state
   function beforeUnloadListener() {
     const { history } = window
     if (!history.state) return
@@ -133,14 +150,17 @@ function useHistoryListeners(
   }
 
   function destroy() {
+    // 执行全部拆卸函数
     for (const teardown of teardowns) teardown()
     teardowns = []
     window.removeEventListener('popstate', popStateHandler)
     window.removeEventListener('beforeunload', beforeUnloadListener)
   }
 
+  // history 模式不刷新页面更新路由的监听方法
   // setup the listeners and prepare teardown callbacks
   window.addEventListener('popstate', popStateHandler)
+  // 关闭浏览器、后退、前进等
   window.addEventListener('beforeunload', beforeUnloadListener)
 
   return {
@@ -171,15 +191,20 @@ function buildState(
 }
 
 function useHistoryStateNavigation(base: string) {
+  // window 中解构，说明应该在 ssr 环境下应该不能使用 ？ TODO:
   const { history, location } = window
 
-  // private variables
+  // private variables 私有变量
   let currentLocation: ValueContainer<HistoryLocation> = {
+    // value 值是一个当前 location 拼接而成的字符串。 path + query
     value: createCurrentLocation(base, location),
   }
+  // history.state 返回栈顶的 state 拷贝。 如果没有使用过 pushState() 或者 replaceState() 函数，history.state 值将为 null
   let historyState: ValueContainer<StateEntry> = { value: history.state }
+  // 建立当前的历史记录条目，因为这是一个全新的导航
   // build current history entry as this is a fresh navigation
   if (!historyState.value) {
+    // 没有 state 的话，初始一下 state
     changeLocation(
       currentLocation.value,
       {
@@ -203,7 +228,9 @@ function useHistoryStateNavigation(base: string) {
     replace: boolean
   ): void {
     const url =
+      // base
       createBaseLocation() +
+      // 当 base 有哈希值时保留所有现有查询
       // preserve any existing query when base has a hash
       (base.indexOf('#') > -1 && location.search
         ? location.pathname + location.search + '#'
@@ -212,10 +239,13 @@ function useHistoryStateNavigation(base: string) {
     try {
       // BROWSER QUIRK
       // NOTE: Safari throws a SecurityError when calling this function 100 times in 30 seconds
+      // 调用函数更新 state. replaceState 与 pushState 的区别在于，replaceState() 是修改了当前的历史记录项而不是新建一个
       history[replace ? 'replaceState' : 'pushState'](state, '', url)
+      // 更新 historyState 的值
       historyState.value = state
     } catch (err) {
       warn('Error with push/replace State', err)
+      // 强制用 location 进行导航，这也会重置通话计数（估计会重新刷新页面， state 值应该也都不在了）
       // Force the navigation, this also resets the call count
       location[replace ? 'replace' : 'assign'](url)
     }
@@ -272,15 +302,18 @@ function useHistoryStateNavigation(base: string) {
 }
 
 export function createWebHistory(base?: string): RouterHistory {
+  // 规范化 base
   base = normalizeBase(base)
-
+  // history 导航
   const historyNavigation = useHistoryStateNavigation(base)
+  // history 监听器
   const historyListeners = useHistoryListeners(
     base,
     historyNavigation.state,
     historyNavigation.location,
     historyNavigation.replace
   )
+
   function go(delta: number, triggerListeners = true) {
     if (!triggerListeners) historyListeners.pauseListeners()
     history.go(delta)
@@ -288,7 +321,7 @@ export function createWebHistory(base?: string): RouterHistory {
 
   const routerHistory: RouterHistory = assign(
     {
-      // it's overridden right after
+      // 它在之后被覆盖 it's overridden right after
       location: '',
       base,
       go,
@@ -299,6 +332,7 @@ export function createWebHistory(base?: string): RouterHistory {
     historyListeners
   )
 
+  // 说白了就是不让直接修改 location 和 state 值
   Object.defineProperty(routerHistory, 'location', {
     get: () => historyNavigation.location.value,
   })
@@ -307,5 +341,6 @@ export function createWebHistory(base?: string): RouterHistory {
     get: () => historyNavigation.state.value,
   })
 
+  // { base, location, state, createHref, go, push, replace, pauseListeners, listen, destroy, ... }
   return routerHistory
 }

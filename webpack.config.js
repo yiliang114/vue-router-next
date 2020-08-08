@@ -26,7 +26,7 @@ const config = (env = {}) => {
       publicPath: '/',
       filename: 'bundle.js',
     },
-
+    // 入口
     entry: [resolve(__dirname, 'playground/main.ts')],
     module: {
       rules: [

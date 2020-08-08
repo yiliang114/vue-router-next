@@ -16,7 +16,10 @@ import { globalState } from './store'
 import { scrollWaiter } from './scrollWaiter'
 let removeRoute: (() => void) | undefined
 
+// 需要额外手动创建一个 history 就有点麻烦。。
 export const routerHistory = createWebHistory()
+
+// 创建一个 vue-router-next 实例
 export const router = createRouter({
   history: routerHistory,
   strict: true,
@@ -145,6 +148,7 @@ export const router = createRouter({
       },
     },
   ],
+  // TODO: 滚动行为 ？
   async scrollBehavior(to, from, savedPosition) {
     await scrollWaiter.wait()
     if (savedPosition) {
@@ -197,6 +201,7 @@ router.afterEach((to, from) => {
   // )
 })
 
+// beforeEach 最终应该会形成一个数组，数组内的函数应该会异步按循序执行
 router.beforeEach((to, from, next) => {
   // console.log('second guard')
   if (to.query.to) next(to.query.to as string)

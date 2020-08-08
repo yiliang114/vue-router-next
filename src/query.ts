@@ -34,6 +34,7 @@ export type LocationQueryRaw = Record<
 >
 
 /**
+ * 将 queryString 转化为一个对象
  * Transforms a queryString into a {@link LocationQuery} object. Accept both, a
  * version with the leading `?` and without Should work as URLSearchParams
  *
@@ -42,6 +43,7 @@ export type LocationQueryRaw = Record<
  */
 export function parseQuery(search: string): LocationQuery {
   const query: LocationQuery = {}
+  // 避免转化一个包含空 key 或者 空值的对象
   // avoid creating an object with an empty key and empty value
   // because of split('&')
   if (search === '' || search === '?') return query
@@ -52,9 +54,11 @@ export function parseQuery(search: string): LocationQuery {
       string,
       string | undefined
     ]
+    // decodeURIComponent
     key = decode(key)
-    // avoid decoding null
+    // avoid decoding null 避免转义 null
     let value = rawValue == null ? null : decode(rawValue)
+    // query 中已经存在了 key 那就将 key 的值转化为一个数组
     if (key in query) {
       // an extra variable for ts types
       let currentValue = query[key]
@@ -74,20 +78,22 @@ export function parseQuery(search: string): LocationQuery {
  * doesn't prepend a `?`
  *
  * @param query - query object to stringify
- * @returns string version of the query without the leading `?`
+ * @returns string version of the query without the leading `?` 最终结果不会携带 ？
  */
 export function stringifyQuery(query: LocationQueryRaw): string {
   let search = ''
   for (let key in query) {
+    // 分隔符
     if (search.length) search += '&'
     const value = query[key]
+    // 需要特殊处理一下一些分隔符，比如数字的开、闭
     key = encodeQueryProperty(key)
     if (value == null) {
-      // only null adds the value
+      // only null adds the value. null 的话需要加上的，undefined 不要了~
       if (value !== undefined) search += key
       continue
     }
-    // keep null values
+    // keep null values 将 value 转化为数组
     let values: LocationQueryValueRaw[] = Array.isArray(value)
       ? value.map(v => v && encodeQueryProperty(v))
       : [value && encodeQueryProperty(value)]

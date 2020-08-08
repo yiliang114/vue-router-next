@@ -1,4 +1,5 @@
 <template>
+  可怕，会被一个 chrome 插件搞的只显示 json
   <div>
     <pre>{{ currentLocation }}</pre>
     <section class="info">
@@ -42,14 +43,12 @@
         <router-link to="/n/%E2%82%AC">/n/%E2%82%AC</router-link>
       </li>
       <li>
-        <router-link :to="{ name: 'docs', params: { id: '€uro' } }"
-          >/docs/€uro (object)</router-link
-        >
+        <router-link :to="{ name: 'docs', params: { id: '€uro' } }">/docs/€uro (object)</router-link>
       </li>
       <li>
-        <router-link :to="{ path: '/', query: { currency: '€uro', é: 'e' } }"
-          >/currency=€uro&é=e (object)</router-link
-        >
+        <router-link
+          :to="{ path: '/', query: { currency: '€uro', é: 'e' } }"
+        >/currency=€uro&é=e (object)</router-link>
       </li>
       <li>
         <router-link to="/documents/€">/n/€</router-link>
@@ -76,14 +75,10 @@
         <router-link to="/children/alias">/children/alias</router-link>
       </li>
       <li>
-        <router-link :to="{ name: 'default-child' }"
-          >/children (child named)</router-link
-        >
+        <router-link :to="{ name: 'default-child' }">/children (child named)</router-link>
       </li>
       <li>
-        <router-link :to="{ name: 'WithChildren' }"
-          >/children (parent named)</router-link
-        >
+        <router-link :to="{ name: 'WithChildren' }">/children (parent named)</router-link>
       </li>
       <li>
         <router-link to="/children/a">/children/a</router-link>
@@ -115,8 +110,7 @@
             name: 'user',
             params: { id: '' + (Number(currentLocation.params.id || 0) + 1) },
           }"
-          >/users/{{ Number(currentLocation.params.id || 0) + 1 }}</router-link
-        >
+        >/users/{{ Number(currentLocation.params.id || 0) + 1 }}</router-link>
       </li>
       <li>
         <router-link to="/with-data">/with-data</router-link>
@@ -125,9 +119,7 @@
         <router-link to="/cant-leave">/cant-leave</router-link>
       </li>
       <li>
-        <router-link :to="{ name: 'docs', params: { id: 'é' } }"
-          >/docs/é</router-link
-        >
+        <router-link :to="{ name: 'docs', params: { id: 'é' } }">/docs/é</router-link>
       </li>
       <li>
         <router-link to="/rep">/rep</router-link>
@@ -145,9 +137,7 @@
         <router-link to="/p/1">/p/1</router-link>
       </li>
       <li>
-        <router-link to="/parent/1/as-absolute-a"
-          >/parent/1/as-absolute-a</router-link
-        >
+        <router-link to="/parent/1/as-absolute-a">/parent/1/as-absolute-a</router-link>
       </li>
       <li>
         <router-link to="/p/1/as-absolute-a">/p/1/as-absolute-a</router-link>
@@ -172,9 +162,7 @@
           </transition>
         </router-view>
       </template>
-      <template #fallback>
-        Loading...
-      </template>
+      <template #fallback>Loading...</template>
     </Suspense>
   </div>
 </template>
@@ -184,14 +172,19 @@ import { defineComponent, inject, computed, ref } from 'vue'
 import { scrollWaiter } from './scrollWaiter'
 import { useRoute } from '../src'
 
+// vue 3 创建有一个组件
 export default defineComponent({
   name: 'App',
   setup() {
+    // hooks 形式的 router
     const route = useRoute()
+    // TODO: 暂时不清楚这个用法
     const state = inject('state')
+    // 新的响应式
     const viewName = ref('default')
 
     const currentLocation = computed(() => {
+      // 对象的反向解构， 具体是不是叫这个名字来着？
       const { matched, ...rest } = route
       return rest
     })
@@ -199,10 +192,12 @@ export default defineComponent({
     function flushWaiter() {
       scrollWaiter.flush()
     }
+
     function setupWaiter() {
       scrollWaiter.add()
     }
 
+    // 计算属性。另一点是，this.$route.params.id 变成了 route.value.params.id
     const nextUserLink = computed(
       () => '/users/' + String((Number(route.value.params.id) || 0) + 1)
     )

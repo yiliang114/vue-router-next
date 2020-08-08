@@ -173,27 +173,36 @@ export interface Router {
 }
 
 /**
+ * 创建可在 Vue 应用程序上使用的 Router实例
  * Create a Router instance that can be used on a Vue app.
  *
  * @param options - {@link RouterOptions}
  */
 export function createRouter(options: RouterOptions): Router {
+  // 创建一个匹配器
   const matcher = createRouterMatcher(options.routes, options)
+  // 一般来说开发者不会传 parseQuery 这个配置。这是一个将 query 转化为一个对象的函数，可被自定义传入
   let parseQuery = options.parseQuery || originalParseQuery
+  // 类似上面，将 query 对象转化为 string query 形式
   let stringifyQuery = options.stringifyQuery || originalStringifyQuery
   let { scrollBehavior } = options
+  // 传入的 history 是显示调用 createXXXHistory 创建的。
   let routerHistory = options.history
 
   const beforeGuards = useCallbacks<NavigationGuardWithThis<undefined>>()
   const beforeResolveGuards = useCallbacks<NavigationGuardWithThis<undefined>>()
   const afterGuards = useCallbacks<PostNavigationGuard>()
+  // 浅层观察 ？
   const currentRoute = shallowRef<RouteLocationNormalizedLoaded>(
     START_LOCATION_NORMALIZED
   )
   let pendingLocation: RouteLocation = START_LOCATION_NORMALIZED
 
+  // 这里应该是用户指定了滚动行为，所以 history.scrollRestoration 肯定需要修改，不能是 auto
   // leave the scrollRestoration if no scrollBehavior is provided
   if (isBrowser && scrollBehavior && 'scrollRestoration' in history) {
+    // auto: 将恢复用户已滚动到的页面上的位置。
+    // manual: 未还原页上的位置。用户必须手动滚动到该位置。
     history.scrollRestoration = 'manual'
   }
 
@@ -670,6 +679,7 @@ export function createRouter(options: RouterOptions): Router {
   }
 
   /**
+   * 完成导航
    * - Cleans up any navigation guards
    * - Changes the url if necessary
    * - Calls the scrollBehavior
@@ -681,12 +691,14 @@ export function createRouter(options: RouterOptions): Router {
     replace?: boolean,
     data?: HistoryState
   ): NavigationFailure | void {
+    // 最近的导航发生了 error ？
     // a more recent navigation took place
     const error = checkCanceledNavigation(toLocation, from)
     if (error) return error
 
     const [leavingRecords] = extractChangingRecords(toLocation, from)
     for (const record of leavingRecords) {
+      // 从已删除的匹配记录中删除已注册的守卫
       // remove registered guards from removed matched records
       record.leaveGuards = []
       record.updateGuards = []
@@ -695,6 +707,7 @@ export function createRouter(options: RouterOptions): Router {
       record.enterCallbacks = {}
     }
 
+    // 如果不是第一次导航，则仅视为推送
     // only consider as push if it's not the first navigation
     const isFirstNavigation = from === START_LOCATION_NORMALIZED
     const state = !isBrowser ? {} : history.state
@@ -725,6 +738,8 @@ export function createRouter(options: RouterOptions): Router {
   }
 
   let removeHistoryListener: () => void
+
+  // 将侦听器附加到历史记录以触发导航
   // attach listener to history to trigger navigations
   function setupListeners() {
     removeHistoryListener = routerHistory.listen((to, _from, info) => {
@@ -900,9 +915,12 @@ export function createRouter(options: RouterOptions): Router {
     push,
     replace,
     go,
+    // 后退
     back: () => go(-1),
+    // 前进
     forward: () => go(1),
 
+    // 守卫函数
     beforeEach: beforeGuards.add,
     beforeResolve: beforeResolveGuards.add,
     afterEach: afterGuards.add,
@@ -910,6 +928,7 @@ export function createRouter(options: RouterOptions): Router {
     onError: errorHandlers.add,
     isReady,
 
+    // app.use(router) 调用的函数
     install(app: App) {
       const router = this
       app.component('RouterLink', RouterLink)
@@ -942,12 +961,14 @@ export function createRouter(options: RouterOptions): Router {
           RouteLocationNormalizedLoaded[k]
         >
       }
+      // route 对象每一个属性都是计算属性，因为反正也不可修改
       for (let key in START_LOCATION_NORMALIZED) {
         // @ts-ignore: the key matches
         reactiveRoute[key] = computed(() => currentRoute.value[key])
       }
 
       app.provide(routerKey, router)
+      // 根实例上提供 routeLocationKey 对象，值是响应式的 route
       app.provide(routeLocationKey, reactive(reactiveRoute))
 
       let unmountApp = app.unmount

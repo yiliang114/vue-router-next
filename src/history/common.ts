@@ -144,21 +144,24 @@ export interface RouterHistory {
 export function normalizeBase(base?: string): string {
   if (!base) {
     if (isBrowser) {
-      // respect <base> tag
+      // respect <base> tag 根据 base 标签的 href 来作为 router 的 base
       const baseEl = document.querySelector('base')
       base = (baseEl && baseEl.getAttribute('href')) || '/'
-      // strip full URL origin
+      // strip full URL origin 剥离 url 的 origin 头
       base = base.replace(/^\w+:\/\/[^\/]+/, '')
     } else {
+      // 保证 base 是个字符串，否则下面的下面将不能取值
       base = '/'
     }
   }
 
+  // 如果 base 没有携带 / 或者 # 就手动拼接上
   // ensure leading slash when it was removed by the regex above avoid leading
   // slash with hash because the file could be read from the disk like file://
   // and the leading slash would cause problems
   if (base[0] !== '/' && base[0] !== '#') base = '/' + base
 
+  // 删除尾部的斜杠，以便其他方法能够直接使用 `base + fullPath` 去创建一个 url。 需要注意的是 base 如果传的是 `'/'` 最终会变成 `''`
   // remove the trailing slash so all other method can just do `base + fullPath`
   // to build an href
   return removeTrailingSlash(base)

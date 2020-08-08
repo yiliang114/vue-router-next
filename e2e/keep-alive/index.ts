@@ -47,6 +47,7 @@ const WithGuards: RouteComponent = {
     const enterCount = ref(0)
     const updateCount = ref(0)
     const leaveCount = ref(0)
+    // this.$router
     const router = useRouter()
 
     function reset() {

@@ -57,7 +57,9 @@ type UseLinkOptions = VueUseOptions<RouterLinkOptions>
 // TODO: we could allow currentRoute as a prop to expose `isActive` and
 // `isExactActive` behavior should go through an RFC
 export function useLink(props: UseLinkOptions) {
+  // TODO: ts 属性后面的感叹号 ？
   const router = inject(routerKey)!
+  //
   const currentRoute = inject(routeLocationKey)!
 
   const route = computed(() => router.resolve(unref(props.to)))
