@@ -248,10 +248,11 @@ export function createRouter(options: RouterOptions): Router {
 
   function resolve(
     rawLocation: Readonly<RouteLocationRaw>,
-    currentLocation?: Readonly<RouteLocationNormalizedLoaded>
+    currentLocation?: RouteLocationNormalizedLoaded
   ): RouteLocation & { href: string } {
     // const objectLocation = routerLocationAsObject(rawLocation)
-    currentLocation = currentLocation || currentRoute.value
+    // we create a copy to modify it later
+    currentLocation = { ...(currentLocation || currentRoute.value) }
     if (typeof rawLocation === 'string') {
       let locationNormalized = parseURL(
         parseQuery,
@@ -302,9 +303,13 @@ export function createRouter(options: RouterOptions): Router {
         path: parseURL(parseQuery, rawLocation.path, currentLocation.path).path,
       })
     } else {
+      // pass encoded values to the matcher so it can produce encoded path and fullPath
       matcherLocation = assign({}, rawLocation, {
         params: encodeParams(rawLocation.params),
       })
+      // current location params are decoded, we need to encode them in case the
+      // matcher merges the params
+      currentLocation.params = encodeParams(currentLocation.params)
     }
 
     let matchedRoute = matcher.resolve(matcherLocation, currentLocation)
@@ -316,11 +321,9 @@ export function createRouter(options: RouterOptions): Router {
       )
     }
 
-    // put back the unencoded params as given by the user (avoid the cost of decoding them)
-    matchedRoute.params =
-      'params' in rawLocation
-        ? normalizeParams(rawLocation.params)
-        : decodeParams(matchedRoute.params)
+    // decoding them) the matcher might have merged current location params so
+    // we need to run the decoding again
+    matchedRoute.params = normalizeParams(decodeParams(matchedRoute.params))
 
     const fullPath = stringifyURL(
       stringifyQuery,
@@ -496,8 +499,31 @@ export function createRouter(options: RouterOptions): Router {
         if (failure) {
           if (
             isNavigationFailure(failure, ErrorTypes.NAVIGATION_GUARD_REDIRECT)
-          )
-            // preserve the original redirectedFrom if any
+          ) {
+            if (
+              __DEV__ &&
+              // we are redirecting to the same location we were already at
+              isSameRouteLocation(
+                stringifyQuery,
+                resolve(failure.to),
+                toLocation
+              ) &&
+              // and we have done it a couple of times
+              redirectedFrom &&
+              // @ts-ignore
+              (redirectedFrom._count = redirectedFrom._count
+                ? // @ts-ignore
+                  redirectedFrom._count + 1
+                : 1) > 10
+            ) {
+              warn(
+                `Detected an infinite redirection in a navigation guard when going from "${from.fullPath}" to "${toLocation.fullPath}". Aborting to avoid a Stack Overflow. This will break in production if not fixed.`
+              )
+              return Promise.reject(
+                new Error('Infinite redirect in navigation guard')
+              )
+            }
+
             return pushWithRedirect(
               // keep options
               assign(locationAsObject(failure.to), {
@@ -505,8 +531,10 @@ export function createRouter(options: RouterOptions): Router {
                 force,
                 replace,
               }),
+              // preserve the original redirectedFrom if any
               redirectedFrom || toLocation
             )
+          }
         } else {
           // if we fail we don't finalize the navigation
           failure = finalizeNavigation(

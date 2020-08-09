@@ -187,4 +187,42 @@ describe('warnings', () => {
     await expect(router.push({ path: '/foo2' })).resolves.toBe(undefined)
     expect(`No match found for location with path "/foo2"`).toHaveBeenWarned()
   })
+
+  it('warns if next is called with the same location too many times', async () => {
+    let router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'a', component },
+        { path: '/b', component },
+      ],
+    })
+
+    router.beforeEach(to => {
+      if (to.path === '/b') return '/b'
+      return
+    })
+
+    await router.push('/b').catch(() => {})
+    expect(
+      'Detected an infinite redirection in a navigation guard when going from "/" to "/b"'
+    ).toHaveBeenWarned()
+  })
+
+  it('warns if `next` is called twice', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component },
+        { path: '/foo', component },
+      ],
+    })
+    router.beforeEach((to, from, next) => {
+      next()
+      next()
+    })
+    await router.push('/foo')
+    expect(
+      'It should be called exactly one time in each navigation guard'
+    ).toHaveBeenWarned()
+  })
 })

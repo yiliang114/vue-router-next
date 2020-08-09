@@ -175,6 +175,7 @@ import { useRoute } from '../src'
 // vue 3 创建有一个组件
 export default defineComponent({
   name: 'App',
+  // setup return 出来的对象全都支持在模板中直接进行调用
   setup() {
     // hooks 形式的 router
     const route = useRoute()
