@@ -16,6 +16,7 @@ import { globalState } from './store'
 import { scrollWaiter } from './scrollWaiter'
 let removeRoute: (() => void) | undefined
 
+debugger
 // 需要额外手动创建一个 history 就有点麻烦。。
 export const routerHistory = createWebHistory()
 
@@ -166,9 +167,11 @@ export const router = createRouter({
 
 const delay = (t: number) => new Promise(resolve => setTimeout(resolve, t))
 
-// remove trailing slashes
+// remove trailing slashes 移除末尾的斜杠
 router.beforeEach((to, from, next) => {
+  debugger
   if (/.\/$/.test(to.path)) {
+    // 跳转之后状态码给 301
     to.meta.redirectCode = 301
     next(to.path.replace(/\/$/, ''))
   } else next()

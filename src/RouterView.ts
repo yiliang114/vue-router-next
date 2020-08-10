@@ -47,6 +47,7 @@ export const RouterViewImpl = defineComponent({
 
     // 任意一个组件都可以作为 父级组件 provide 提供值，传给子组件
     provide(viewDepthKey, depth + 1)
+    // TODO:
     provide(matchedRouteKey, matchedRouteRef)
 
     const viewRef = ref<ComponentPublicInstance>()

@@ -50,6 +50,7 @@ export interface _PathParserOptions {
    */
   sensitive?: boolean
   /**
+   * 我们是否应该不允许一个结尾斜杠。默认值为假
    * Should we disallow a trailing slash. Defaults to false
    */
   strict?: boolean

@@ -40,5 +40,6 @@ export function createWebHashHistory(base?: string): RouterHistory {
       )}".`
     )
   }
+  // base 中携带 # 来创建一个 history 模式
   return createWebHistory(base)
 }

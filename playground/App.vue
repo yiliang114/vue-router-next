@@ -147,6 +147,7 @@
       </li>
     </ul>
     <button @click="toggleViewName">Toggle view</button>
+    <button @click="routerPushHandler">Router.push</button>
     <Suspense>
       <template #default>
         <router-view :name="viewName" v-slot="{ Component }">
@@ -170,7 +171,7 @@
 <script>
 import { defineComponent, inject, computed, ref } from 'vue'
 import { scrollWaiter } from './scrollWaiter'
-import { useRoute } from '../src'
+import { useRoute,useRouter } from '../src'
 
 // vue 3 创建有一个组件
 export default defineComponent({
@@ -179,6 +180,7 @@ export default defineComponent({
   setup() {
     // hooks 形式的 router
     const route = useRoute()
+    const router = useRouter()
     // TODO: 暂时不清楚这个用法
     const state = inject('state')
     // 新的响应式
@@ -213,6 +215,10 @@ export default defineComponent({
       toggleViewName() {
         viewName.value = viewName.value === 'default' ? 'other' : 'default'
       },
+      // FIXME: 这里给 playground 添加一个示例
+      routerPushHandler() {
+        router.push('/p/1')
+      }
     }
   },
 })

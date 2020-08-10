@@ -189,6 +189,7 @@ export function createRouter(options: RouterOptions): Router {
   // 传入的 history 是显示调用 createXXXHistory 创建的。
   let routerHistory = options.history
 
+  // 闭包做了一个私有数组，用来保存回调函数
   const beforeGuards = useCallbacks<NavigationGuardWithThis<undefined>>()
   const beforeResolveGuards = useCallbacks<NavigationGuardWithThis<undefined>>()
   const afterGuards = useCallbacks<PostNavigationGuard>()
@@ -196,6 +197,7 @@ export function createRouter(options: RouterOptions): Router {
   const currentRoute = shallowRef<RouteLocationNormalizedLoaded>(
     START_LOCATION_NORMALIZED
   )
+  // 初始状态的路由
   let pendingLocation: RouteLocation = START_LOCATION_NORMALIZED
 
   // 这里应该是用户指定了滚动行为，所以 history.scrollRestoration 肯定需要修改，不能是 auto
@@ -206,6 +208,7 @@ export function createRouter(options: RouterOptions): Router {
     history.scrollRestoration = 'manual'
   }
 
+  // 此处获取的是一个空的对象， applyToParams 第二个参数都没有给
   const normalizeParams = applyToParams.bind(
     null,
     paramValue => '' + paramValue
@@ -218,6 +221,7 @@ export function createRouter(options: RouterOptions): Router {
     route?: RouteRecordRaw
   ) {
     let parent: Parameters<typeof matcher['addRoute']>[1] | undefined
+    // 记录
     let record: RouteRecordRaw
     if (isRouteName(parentOrRoute)) {
       parent = matcher.getRecordMatcher(parentOrRoute)
@@ -226,6 +230,7 @@ export function createRouter(options: RouterOptions): Router {
       record = parentOrRoute
     }
 
+    // TODO: 这里只传了一个参数怎么办？
     return matcher.addRoute(record, parent)
   }
 
@@ -393,7 +398,9 @@ export function createRouter(options: RouterOptions): Router {
     }
   }
 
+  // this.$router.push
   function push(to: RouteLocationRaw | RouteLocation) {
+    debugger
     return pushWithRedirect(to)
   }
 
@@ -401,6 +408,7 @@ export function createRouter(options: RouterOptions): Router {
     return push(assign(locationAsObject(to), { replace: true }))
   }
 
+  // api 式跳转路由
   function pushWithRedirect(
     to: RouteLocationRaw | RouteLocation,
     redirectedFrom?: RouteLocation
@@ -568,14 +576,18 @@ export function createRouter(options: RouterOptions): Router {
   }
 
   // TODO: refactor the whole before guards by internally using router.beforeEach
+  // TODO: 通过内部使用router.beforeEach重构防卫前的整体
 
+  // 执行导航
   function navigate(
     to: RouteLocationNormalized,
     from: RouteLocationNormalizedLoaded
   ): Promise<any> {
     let guards: Lazy<any>[]
 
+    // 这里的所有组件都已经解决了一次，因为我们要离开
     // all components here have been resolved once because we are leaving
+    // 提取组件的 beforeRouteLeave 守卫函数
     guards = extractComponentsGuards(
       from.matched.filter(record => to.matched.indexOf(record) < 0).reverse(),
       'beforeRouteLeave',
@@ -609,6 +621,7 @@ export function createRouter(options: RouterOptions): Router {
         .then(() => {
           // check global guards beforeEach
           guards = []
+          // 执行守卫函数
           for (const guard of beforeGuards.list()) {
             guards.push(guardToPromiseFn(guard, to, from))
           }
@@ -785,6 +798,7 @@ export function createRouter(options: RouterOptions): Router {
         )
       }
 
+      // 执行导航，会执行守卫函数
       navigate(toLocation, from)
         .catch((error: NavigationFailure | NavigationRedirectError) => {
           if (
@@ -948,7 +962,7 @@ export function createRouter(options: RouterOptions): Router {
     // 前进
     forward: () => go(1),
 
-    // 守卫函数
+    // 守卫函数. 传入一个函数作为参数， 往 list 数组中加入一个回调函数。
     beforeEach: beforeGuards.add,
     beforeResolve: beforeResolveGuards.add,
     afterEach: afterGuards.add,
@@ -999,6 +1013,7 @@ export function createRouter(options: RouterOptions): Router {
       // 根实例上提供 routeLocationKey 对象，值是响应式的 route
       app.provide(routeLocationKey, reactive(reactiveRoute))
 
+      // 卸载函数
       let unmountApp = app.unmount
       installedApps.add(app)
       app.unmount = function () {

@@ -40,17 +40,18 @@ interface RouterMatcher {
 }
 
 /**
+ * 路由匹配器
  * Creates a Router Matcher.
  *
  * @internal
- * @param routes - array of initial routes
- * @param globalOptions - global route options
+ * @param routes - array of initial routes 初始化的路由数组
+ * @param globalOptions - global route options 全局路由配置项
  */
 export function createRouterMatcher(
   routes: RouteRecordRaw[],
   globalOptions: PathParserOptions
 ): RouterMatcher {
-  // normalized ordered array of matchers
+  // normalized ordered array of matchers 经过标准化的匹配器
   const matchers: RouteRecordMatcher[] = []
   const matcherMap = new Map<RouteRecordName, RouteRecordMatcher>()
   globalOptions = mergeOptions(
@@ -67,13 +68,16 @@ export function createRouterMatcher(
     parent?: RouteRecordMatcher,
     originalRecord?: RouteRecordMatcher
   ) {
+    // 标记该匹配器是否已经使用过 ？
     // used later on to remove by name
     let isRootAdd = !originalRecord
+    // 将该记录进行归一化, 也就是简单处理了一下， 几个属性给了默认值
     let mainNormalizedRecord = normalizeRouteRecord(record)
-    // we might be the child of an alias
+    // we might be the child of an alias 可能是一个别名的孩子
     mainNormalizedRecord.aliasOf = originalRecord && originalRecord.record
+    // 将记录和全局的路由配置合并 是啥意思 ？
     const options: PathParserOptions = mergeOptions(globalOptions, record)
-    // generate an array of records to correctly handle aliases
+    // generate an array of records to correctly handle aliases 生成一个记录数组来正确处理别名
     const normalizedRecords: typeof mainNormalizedRecord[] = [
       mainNormalizedRecord,
     ]
@@ -81,7 +85,9 @@ export function createRouterMatcher(
       const aliases =
         typeof record.alias === 'string' ? [record.alias] : record.alias!
       for (const alias of aliases) {
+        // 如果有别名的话 需要一样推入到归一化的记录数组中去
         normalizedRecords.push(
+          // TODO:
           assign({}, mainNormalizedRecord, {
             // this allows us to hold a copy of the `components` option
             // so that async components cache is hold on the original record
@@ -162,6 +168,7 @@ export function createRouterMatcher(
 
     return originalMatcher
       ? () => {
+          // 有了别名之后，原来的匹配器需要删除
           // since other matchers are aliases, they should be removed by the original matcher
           removeRoute(originalMatcher!)
         }
@@ -172,12 +179,15 @@ export function createRouterMatcher(
     if (isRouteName(matcherRef)) {
       const matcher = matcherMap.get(matcherRef)
       if (matcher) {
+        // Map 和 数组都是用来存储匹配器的
         matcherMap.delete(matcherRef)
         matchers.splice(matchers.indexOf(matcher), 1)
+        // 匹配器的 children 和 alias 依赖关系也需要删除
         matcher.children.forEach(removeRoute)
         matcher.alias.forEach(removeRoute)
       }
     } else {
+      // 传入的是一个匹配器
       let index = matchers.indexOf(matcherRef)
       if (index > -1) {
         matchers.splice(index, 1)
@@ -203,6 +213,7 @@ export function createRouterMatcher(
     // console.log('END i is', { i })
     // while (i < matchers.length && matcher.score <= matchers[i].score) i++
     matchers.splice(i, 0, matcher)
+    // 只会将原始匹配器加入到 map 中。 这里会通过 matcher 的 record 中是否含有 aliasOf 来判断是否是别名记录
     // only add the original record to the name map
     if (matcher.record.name && !isAliasRecord(matcher))
       matcherMap.set(matcher.record.name, matcher)
@@ -367,6 +378,7 @@ function normalizeRecordProps(
 
 /**
  * Checks if a record or any of its parent is an alias
+ * FIXME: 这里的参数应该是 matcher
  * @param record
  */
 function isAliasRecord(record: RouteRecordMatcher | undefined): boolean {

@@ -54,14 +54,15 @@ export interface RouterLinkProps extends RouterLinkOptions {
 
 type UseLinkOptions = VueUseOptions<RouterLinkOptions>
 
+// TODO：我们可以允许 currentRoute 作为道具来展示 `isActive` 和
+//`isExactActive`行 为应通过 RFC
 // TODO: we could allow currentRoute as a prop to expose `isActive` and
 // `isExactActive` behavior should go through an RFC
 export function useLink(props: UseLinkOptions) {
   // TODO: ts 属性后面的感叹号 ？
   const router = inject(routerKey)!
-  //
   const currentRoute = inject(routeLocationKey)!
-
+  // TODO: resolve ?
   const route = computed(() => router.resolve(unref(props.to)))
 
   const activeRecordIndex = computed<number>(() => {
@@ -141,6 +142,7 @@ export const RouterLinkImpl = defineComponent({
     const link = reactive(useLink(props))
     const { options } = inject(routerKey)!
 
+    // 有优先级，获取 class 名
     const elClass = computed(() => ({
       [getLinkClass(
         props.activeClass,
@@ -161,6 +163,7 @@ export const RouterLinkImpl = defineComponent({
 
     return () => {
       const children = slots.default && slots.default(link)
+      // custom 是否直接默认编译成 a 标签
       return props.custom
         ? children
         : h(

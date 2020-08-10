@@ -199,6 +199,7 @@ function useHistoryStateNavigation(base: string) {
     // value 值是一个当前 location 拼接而成的字符串。 path + query
     value: createCurrentLocation(base, location),
   }
+  // TODO: 理论上没有调用两个函数，history.state 是空的，但是实际上是有值的。。。
   // history.state 返回栈顶的 state 拷贝。 如果没有使用过 pushState() 或者 replaceState() 函数，history.state 值将为 null
   let historyState: ValueContainer<StateEntry> = { value: history.state }
   // 建立当前的历史记录条目，因为这是一个全新的导航
@@ -302,7 +303,7 @@ function useHistoryStateNavigation(base: string) {
 }
 
 export function createWebHistory(base?: string): RouterHistory {
-  // 规范化 base
+  // 规范化 base. 末尾的斜杠默认会被去掉，也就是说 base 如果是 undefined 的话，最终结果是 ""
   base = normalizeBase(base)
   // history 导航
   const historyNavigation = useHistoryStateNavigation(base)

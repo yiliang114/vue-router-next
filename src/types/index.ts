@@ -264,6 +264,7 @@ export type RouteRecordRaw =
   | RouteRecordMultipleViews
   | RouteRecordRedirect
 
+// 初始状态的路由
 export const START_LOCATION_NORMALIZED: RouteLocationNormalizedLoaded = {
   path: '/',
   name: undefined,

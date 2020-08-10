@@ -38,6 +38,7 @@ export function onBeforeRouteLeave(leaveGuard: NavigationGuard) {
     return
   }
 
+  // router-view 标签提供的一个值
   const activeRecord: RouteRecordNormalized | undefined = inject(
     matchedRouteKey,
     {} as any
@@ -106,6 +107,7 @@ export function guardToPromiseFn(
   record?: RouteRecordNormalized,
   name?: string
 ): () => Promise<void> {
+  // 保留对 enterCallbackArray 的引用，以防止在发生新的导航时推送回调
   // keep a reference to the enterCallbackArray to prevent pushing callbacks if a new navigation took place
   const enterCallbackArray =
     record &&
@@ -196,6 +198,7 @@ function canOnlyBeCalledOnce(
 
 type GuardType = 'beforeRouteEnter' | 'beforeRouteUpdate' | 'beforeRouteLeave'
 
+// 提取组件的守卫函数
 export function extractComponentsGuards(
   matched: RouteRecordNormalized[],
   guardType: GuardType,
@@ -216,6 +219,7 @@ export function extractComponentsGuards(
         rawComponent = () => promise
       }
 
+      // 如果未安装路由组件，则跳过更新并留下警惕
       // skip update and leave guards if the route component is not mounted
       if (guardType !== 'beforeRouteEnter' && !record.instances[name]) continue
 
