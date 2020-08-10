@@ -140,6 +140,7 @@ export const router = createRouter({
       strict: true,
       beforeEnter(to, from, next) {
         if (!removeRoute) {
+          // TODO: 直接加了一个组件 ？
           removeRoute = router.addRoute('dynamic', {
             path: 'child',
             component: Dynamic,

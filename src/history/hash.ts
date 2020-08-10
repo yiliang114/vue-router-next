@@ -25,6 +25,9 @@ import { warn } from '../warning'
  * ```
  */
 export function createWebHashHistory(base?: string): RouterHistory {
+  //确保此实现在编码方面特别适合IE11
+  //对于`file：//`，直接使用路径名并忽略基数
+  //location.pathname甚至在根目录下也包含一个初始`/`：https://example.com
   // Make sure this implementation is fine in terms of encoding, specially for IE11
   // for `file://`, directly use the pathname and ignore the base
   // location.pathname contains an initial `/` even at the root: `https://example.com`

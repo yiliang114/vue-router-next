@@ -38,12 +38,16 @@ export function createRouteRecordMatcher(
   const matcher: RouteRecordMatcher = assign(parser, {
     record,
     parent,
+    //这些需要由父代填充
     // these needs to be populated by the parent
     children: [],
     alias: [],
   })
 
   if (parent) {
+    //两者都是别名或都不是别名
+    //我们不想混合它们，因为在
+    //在Matcher.addRoute中传递originalRecord
     // both are aliases or both are not aliases
     // we don't want to mix them because the order is used when
     // passing originalRecord in Matcher.addRoute

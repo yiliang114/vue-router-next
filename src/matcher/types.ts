@@ -71,6 +71,7 @@ export interface RouteRecordNormalized {
   instances: Record<string, ComponentPublicInstance | undefined | null>
   // can only be of of the same type as this record
   /**
+   * *定义该记录是否为另一条记录的别名。该属性是 `undefined`，如果记录是原始记录。
    * Defines if this record is the alias of another one. This property is
    * `undefined` if the record is the original one.
    */

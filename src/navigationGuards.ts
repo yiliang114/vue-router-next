@@ -119,6 +119,7 @@ export function guardToPromiseFn(
       const next: NavigationGuardNext = (
         valid?: boolean | RouteLocationRaw | NavigationGuardNextCallback | Error
       ) => {
+        // next 函数传了 false 之后理由就不会再往前走
         if (valid === false)
           reject(
             createRouterError<NavigationFailure>(
@@ -144,6 +145,7 @@ export function guardToPromiseFn(
         } else {
           if (
             enterCallbackArray &&
+            // 由于 enterCallbackArray 是真实的，因此记录和名称也都是
             // since enterCallbackArray is truthy, both record and name also are
             record!.enterCallbacks[name!] === enterCallbackArray &&
             typeof valid === 'function'
@@ -153,6 +155,7 @@ export function guardToPromiseFn(
         }
       }
 
+      // 使用 Promise.resolve 进行包装可以使其与异步和同步防护一起使用
       // wrapping with Promise.resolve allows it to work with both async and sync guards
       let guardCall = Promise.resolve(
         guard.call(

@@ -63,12 +63,13 @@ export function createRouterMatcher(
     return matcherMap.get(name)
   }
 
+  // 添加路由. record: routers 的一项纪录
   function addRoute(
     record: RouteRecordRaw,
     parent?: RouteRecordMatcher,
     originalRecord?: RouteRecordMatcher
   ) {
-    // 标记该匹配器是否已经使用过 ？
+    // 稍后用于删除名称
     // used later on to remove by name
     let isRootAdd = !originalRecord
     // 将该记录进行归一化, 也就是简单处理了一下， 几个属性给了默认值
@@ -81,6 +82,7 @@ export function createRouterMatcher(
     const normalizedRecords: typeof mainNormalizedRecord[] = [
       mainNormalizedRecord,
     ]
+    // record: routers 定义的 item 会执行到这
     if ('alias' in record) {
       const aliases =
         typeof record.alias === 'string' ? [record.alias] : record.alias!
@@ -109,8 +111,10 @@ export function createRouterMatcher(
     let matcher: RouteRecordMatcher
     let originalMatcher: RouteRecordMatcher | undefined
 
+    // 如果没有别名，这里就只有一项
     for (const normalizedRecord of normalizedRecords) {
       let { path } = normalizedRecord
+      //如果子项不是绝对子项，则为嵌套路由建立路径路线。仅在子路径不为空并且如果 父路径没有斜杠
       // Build up the path for nested routes if the child isn't an absolute
       // route. Only add the / delimiter if the child path isn't empty and if the
       // parent path doesn't have a trailing slash
@@ -142,6 +146,8 @@ export function createRouterMatcher(
         originalMatcher = originalMatcher || matcher
         if (originalMatcher !== matcher) originalMatcher.alias.push(matcher)
 
+        // 如果已命名过了，删除路由，并且仅用于最上面的记录（避免嵌套调用）
+        // 因为原始记录是第一条记录，所以这是有效的
         // remove the route if named and only for the top record (avoid in nested calls)
         // this works because the original record is the first one
         if (isRootAdd && record.name && !isAliasRecord(matcher))
@@ -304,7 +310,7 @@ export function createRouterMatcher(
     }
   }
 
-  // add initial routes
+  // add initial routes 添加初始路由
   routes.forEach(route => addRoute(route))
 
   return { addRoute, resolve, removeRoute, getRoutes, getRecordMatcher }
@@ -335,17 +341,23 @@ export function normalizeRouteRecord(
 ): RouteRecordNormalized {
   return {
     path: record.path,
+    // 重定向地址 ？
     redirect: record.redirect,
+    // router name
     name: record.name,
     meta: record.meta || {},
+    // 别名
     aliasOf: undefined,
+    // 只有这个守卫函数会被赋值，难道 routers 在声明时，只会传入 beforeEnter 这个钩子么
     beforeEnter: record.beforeEnter,
     props: normalizeRecordProps(record),
     children: record.children || [],
     instances: {},
+    // 守卫函数数组一开始给的都是空的 ？
     leaveGuards: [],
     updateGuards: [],
     enterCallbacks: {},
+    // TODO:
     components:
       'components' in record
         ? record.components || {}
@@ -354,6 +366,7 @@ export function normalizeRouteRecord(
 }
 
 /**
+ * 将记录中的可选 props 规范化为始终是类似于以下内容的对象组件。也接受组件的布尔值。
  * Normalize the optional `props` in a record to always be an object similar to
  * components. Also accept a boolean for components.
  * @param record
@@ -362,11 +375,14 @@ function normalizeRecordProps(
   record: RouteRecordRaw
 ): Record<string, _RouteRecordProps> {
   const propsObject = {} as Record<string, _RouteRecordProps>
+  // props 在重定向记录中不存在，但是我们可以直接设置 false
   // props does not exist on redirect records but we can set false directly
   const props = (record as any).props || false
+  // 纪录中 不存在 component ？
   if ('component' in record) {
     propsObject.default = props
   } else {
+    //注意：我们还可以将函数应用于每个组件。需要用例的用户反馈
     // NOTE: we could also allow a function to be applied to every component.
     // Would need user feedback for use cases
     for (let name in record.components)
